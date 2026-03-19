@@ -13,6 +13,7 @@ import '../../providers/study_dates_provider.dart';
 import '../../providers/subscription_provider.dart';
 import '../../providers/spaced_repetition_provider.dart';
 import '../../providers/study_session_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'widgets/swipeable_card.dart';
 import 'widgets/card_stack_effect.dart';
@@ -123,6 +124,11 @@ class _CardScreenState extends ConsumerState<CardScreen>
         ).showSnackBar(SnackBar(content: Text('Next review: $nextDate')));
       }
     }
+
+    // Cloud sync is queued in background only for authenticated Pro users.
+    ref
+        .read(syncServiceProvider)
+        .queueProgressSync(tier: ref.read(subscriptionProvider));
 
     // Record streak on first swipe of the session
     if (!_streakRecorded) {

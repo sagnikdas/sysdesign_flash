@@ -8,6 +8,7 @@ import '../../screens/home/home_screen.dart';
 import '../../screens/progress/progress_screen.dart';
 import '../../screens/settings/settings_screen.dart';
 import '../../screens/study/card_screen.dart';
+import '../../screens/auth/auth_screen.dart';
 import '../../screens/paywall/paywall_screen.dart';
 import '../../screens/paywall/upgrade_success_screen.dart';
 import '../../screens/simulation/simulation_results_screen.dart';
@@ -97,6 +98,11 @@ final appRouter = GoRouter(
       path: '/settings',
       pageBuilder: (context, state) =>
           _fadeThroughPage(state: state, child: const SettingsScreen()),
+    ),
+    GoRoute(
+      path: '/auth',
+      pageBuilder: (context, state) =>
+          _fadeThroughPage(state: state, child: const AuthScreen()),
     ),
     GoRoute(
       path: '/study/:deckId',

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/mastered_provider.dart';
 import '../../providers/bookmarks_provider.dart';
 import '../../providers/streak_provider.dart';
 import '../../providers/user_prefs_provider.dart';
 import '../../providers/subscription_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -15,6 +17,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final userPrefs = ref.watch(userPrefsProvider);
+    final authState = ref.watch(authControllerProvider);
     final displayLabel = userPrefs.displayName.trim().isEmpty
         ? 'Not set'
         : userPrefs.displayName.trim();
@@ -27,6 +30,17 @@ class SettingsScreen extends ConsumerWidget {
             leading: const Icon(Icons.person_outline),
             title: const Text('Display name'),
             subtitle: Text(displayLabel),
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_sync_outlined),
+            title: const Text('Account & Cloud Sync'),
+            subtitle: Text(
+              authState.user?.email ??
+                  (authState.isConfigured
+                      ? 'Not signed in'
+                      : 'Cloud sync not configured in this build'),
+            ),
+            onTap: () => context.push('/auth'),
           ),
           ListTile(
             leading: const Icon(Icons.palette_outlined),

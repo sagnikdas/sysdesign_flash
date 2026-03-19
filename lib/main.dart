@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/config/supabase_config.dart';
 
 Future<void> _migrateLegacyUserName() async {
   final prefs = await SharedPreferences.getInstance();
@@ -32,6 +33,7 @@ void main() async {
   ]);
 
   await _migrateLegacyUserName();
+  await initializeSupabaseIfConfigured();
 
   runApp(
     const ProviderScope(
