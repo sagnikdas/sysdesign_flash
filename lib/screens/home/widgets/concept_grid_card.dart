@@ -3,11 +3,13 @@ import '../../../domain/models/concept.dart';
 
 class ConceptGridCard extends StatelessWidget {
   final Concept concept;
+  final bool isMastered;
   final VoidCallback onTap;
 
   const ConceptGridCard({
     super.key,
     required this.concept,
+    this.isMastered = false,
     required this.onTap,
   });
 
@@ -22,7 +24,6 @@ class ConceptGridCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Color accent bar
             Container(
               height: 4,
               color: concept.color,
@@ -33,7 +34,6 @@ class ConceptGridCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Icon + difficulty
                     Row(
                       children: [
                         Text(
@@ -41,11 +41,25 @@ class ConceptGridCard extends StatelessWidget {
                           style: const TextStyle(fontSize: 24),
                         ),
                         const Spacer(),
-                        _DifficultyDot(difficulty: concept.difficulty),
+                        if (isMastered)
+                          Container(
+                            width: 22,
+                            height: 22,
+                            decoration: const BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          )
+                        else
+                          _DifficultyDot(difficulty: concept.difficulty),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Title
                     Expanded(
                       child: Text(
                         concept.title,
@@ -58,7 +72,6 @@ class ConceptGridCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    // Category chip
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,

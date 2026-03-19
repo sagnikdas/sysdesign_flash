@@ -8,6 +8,14 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
 
+  // Open persistence boxes
+  await Future.wait([
+    Hive.openBox<bool>('mastered'),
+    Hive.openBox<bool>('bookmarks'),
+    Hive.openBox('profile'),
+    Hive.openBox('settings'),
+  ]);
+
   runApp(
     const ProviderScope(
       child: SysDesignFlashApp(),

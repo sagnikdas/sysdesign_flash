@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SettingsScreen extends StatelessWidget {
+import '../../providers/mastered_provider.dart';
+import '../../providers/bookmarks_provider.dart';
+import '../../providers/streak_provider.dart';
+
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -38,13 +43,53 @@ class SettingsScreen extends StatelessWidget {
               'Reset Progress',
               style: TextStyle(color: theme.colorScheme.error),
             ),
-            onTap: () {},
+            subtitle: const Text('Clear all mastered cards and streak'),
+            onTap: () => _confirmReset(context, ref),
           ),
           const Divider(),
           const ListTile(
             leading: Icon(Icons.info_outline),
             title: Text('Version'),
             subtitle: Text('1.0.0'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmReset(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset Progress?'),
+        content: const Text(
+          'This will clear all mastered cards, bookmarks, and your streak. '
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () {
+              ref.read(masteredProvider.notifier).clearAll();
+              ref.read(streakProvider.notifier).reset();
+              // Clear bookmarks too
+              final bookmarkIds =
+                  ref.read(bookmarksProvider).toList();
+              for (final id in bookmarkIds) {
+                ref.read(bookmarksProvider.notifier).toggle(id);
+              }
+              Navigator.of(ctx).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Progress reset')),
+              );
+            },
+            child: const Text('Reset'),
           ),
         ],
       ),
