@@ -6,6 +6,7 @@ import '../../providers/concepts_provider.dart';
 import '../../providers/deck_filter_provider.dart';
 import '../../providers/mastered_provider.dart';
 import '../../providers/streak_provider.dart';
+import '../../providers/user_prefs_provider.dart';
 import 'widgets/welcome_banner.dart';
 import 'widgets/category_filter_bar.dart';
 import 'widgets/concept_grid_card.dart';
@@ -22,6 +23,7 @@ class HomeScreen extends ConsumerWidget {
     final totalConcepts = ref.watch(conceptsProvider).length;
     final mastered = ref.watch(masteredProvider);
     final streak = ref.watch(streakProvider);
+    final userPrefs = ref.watch(userPrefsProvider);
 
     return CustomScrollView(
       slivers: [
@@ -55,6 +57,8 @@ class HomeScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           sliver: SliverToBoxAdapter(
             child: WelcomeBanner(
+              displayName: userPrefs.displayName,
+              dailyGoal: userPrefs.dailyGoal,
               masteredCount: mastered.length,
               totalCount: totalConcepts,
             ),
