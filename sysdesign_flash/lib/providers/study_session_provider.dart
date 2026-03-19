@@ -26,7 +26,6 @@ StudySession studySession(Ref ref, {int maxNew = 5}) {
     final due = schedules.values
         .where((s) => !s.nextReview.isAfter(now))
         .map((s) => s.conceptId)
-        .where((id) => !mastered.contains(id))
         .toList()
       ..shuffle(rng);
 
@@ -34,7 +33,6 @@ StudySession studySession(Ref ref, {int maxNew = 5}) {
     final weak = schedules.values
         .where((s) => s.lastQuality < 3 && s.nextReview.isAfter(now))
         .map((s) => s.conceptId)
-        .where((id) => !mastered.contains(id))
         .toList()
       ..shuffle(rng);
 

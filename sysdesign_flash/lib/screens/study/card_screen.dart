@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -79,13 +80,11 @@ class _CardScreenState extends ConsumerState<CardScreen>
     super.dispose();
   }
 
-  void _onSwiped(SwipeDirection direction) {
+  void _reviewAndAdvance({required int quality, required bool markMastered}) {
     final concept = _cards[_currentIndex];
-
     final isPro = ref.read(subscriptionProvider) == SubscriptionTier.pro;
-    final quality = direction == SwipeDirection.right ? 4 : 1;
 
-    if (direction == SwipeDirection.right) {
+    if (markMastered) {
       _gotItCount++;
       ref.read(masteredProvider.notifier).markMastered(concept.id);
     }
@@ -126,6 +125,13 @@ class _CardScreenState extends ConsumerState<CardScreen>
     }
   }
 
+  void _onSwiped(SwipeDirection direction) {
+    _reviewAndAdvance(
+      quality: direction == SwipeDirection.right ? 4 : 1,
+      markMastered: direction == SwipeDirection.right,
+    );
+  }
+
   void _showSessionComplete() {
     final elapsed = DateTime.now().difference(_startedAt);
     showModalBottomSheet(
@@ -148,6 +154,7 @@ class _CardScreenState extends ConsumerState<CardScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isComplete = _currentIndex >= _cards.length;
+    final subscriptionTier = ref.watch(subscriptionProvider);
     final bookmarks = ref.watch(bookmarksProvider);
 
     return Scaffold(
@@ -157,6 +164,17 @@ class _CardScreenState extends ConsumerState<CardScreen>
             : Text('${_currentIndex + 1} / ${_cards.length}'),
         actions: [
           if (!isComplete) ...[
+            if (kDebugMode &&
+                subscriptionTier == SubscriptionTier.pro) ...[
+                  IconButton(
+                    tooltip: 'Quality 0 (Fail)',
+                    icon: const Icon(Icons.broken_image_outlined),
+                    onPressed: () => _reviewAndAdvance(
+                      quality: 0,
+                      markMastered: false,
+                    ),
+                  ),
+                ],
             IconButton(
               icon: Icon(
                 bookmarks.contains(_cards[_currentIndex].id)
