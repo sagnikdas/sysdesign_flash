@@ -96,17 +96,49 @@ class SettingsScreen extends ConsumerWidget {
               secondary: const Icon(Icons.workspace_premium_outlined),
               title: const Text('Debug: Toggle Pro'),
               value: ref.watch(subscriptionProvider) == SubscriptionTier.pro,
-              onChanged: (value) => ref
-                  .read(subscriptionProvider.notifier)
-                  .setTier(
-                    value ? SubscriptionTier.pro : SubscriptionTier.free,
-                  ),
+              onChanged: (value) async {
+                if (value) {
+                  ref
+                      .read(subscriptionProvider.notifier)
+                      .setTier(SubscriptionTier.pro);
+                  return;
+                }
+                await ref
+                    .read(subscriptionProvider.notifier)
+                    .clearDebugOverride();
+              },
             ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.restore),
             title: const Text('Restore Purchase'),
-            onTap: () {},
+            onTap: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                final tier = await ref
+                    .read(subscriptionProvider.notifier)
+                    .restorePurchases();
+                if (!context.mounted) return;
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      tier == SubscriptionTier.pro
+                          ? 'Pro subscription restored.'
+                          : 'No active Pro purchase found.',
+                    ),
+                  ),
+                );
+              } catch (error) {
+                if (!context.mounted) return;
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      error.toString().replaceFirst('Exception: ', ''),
+                    ),
+                  ),
+                );
+              }
+            },
           ),
           ListTile(
             leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),

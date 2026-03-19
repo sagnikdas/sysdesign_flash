@@ -28,6 +28,7 @@ void main() async {
     Hive.openBox<bool>('bookmarks'),
     Hive.openBox('profile'),
     Hive.openBox('settings'),
+    Hive.openBox('subscription'),
     Hive.openBox<String>('review_schedules'),
     Hive.openBox<int>('study_dates'),
   ]);
@@ -35,9 +36,5 @@ void main() async {
   await _migrateLegacyUserName();
   await initializeSupabaseIfConfigured();
 
-  runApp(
-    const ProviderScope(
-      child: SysDesignFlashApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: SysDesignFlashApp()));
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../providers/subscription_provider.dart';
 
@@ -15,15 +16,22 @@ class PaywallScreen extends ConsumerStatefulWidget {
 
 class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   _PaywallPlan _selectedPlan = _PaywallPlan.annual;
+  bool _isPurchasing = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final planText = switch (_selectedPlan) {
-      _PaywallPlan.annual => r'$35.99/yr',
-      _PaywallPlan.monthly => r'$5.99/mo',
-      _PaywallPlan.lifetime => r'$79.99 one-time',
-    };
+    final productsAsync = ref.watch(billingProductsProvider);
+    final products = productsAsync.asData?.value ?? const <ProductDetails>[];
+    final selectedSku = _mapPlanToSubscriptionPlan(_selectedPlan).sku;
+    final selectedProduct = products.where((p) => p.id == selectedSku).toList();
+    final selectedPrice = selectedProduct.isNotEmpty
+        ? selectedProduct.first.price
+        : switch (_selectedPlan) {
+            _PaywallPlan.annual => r'$35.99/yr',
+            _PaywallPlan.monthly => r'$5.99/mo',
+            _PaywallPlan.lifetime => r'$79.99 one-time',
+          };
 
     return Scaffold(
       appBar: AppBar(title: const Text('SysDesign Flash Pro')),
@@ -96,17 +104,29 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                     _PlanTile(
                       selected: _selectedPlan == _PaywallPlan.annual,
                       title: 'Annual',
-                      subtitle: r'$35.99 / year (best value)',
+                      subtitle: _planSubtitle(
+                        products,
+                        SubscriptionPlan.annual,
+                        fallback: r'$35.99 / year (best value)',
+                      ),
                     ),
                     _PlanTile(
                       selected: _selectedPlan == _PaywallPlan.monthly,
                       title: 'Monthly',
-                      subtitle: r'$5.99 / month',
+                      subtitle: _planSubtitle(
+                        products,
+                        SubscriptionPlan.monthly,
+                        fallback: r'$5.99 / month',
+                      ),
                     ),
                     _PlanTile(
                       selected: _selectedPlan == _PaywallPlan.lifetime,
                       title: 'Lifetime',
-                      subtitle: r'$79.99 one-time',
+                      subtitle: _planSubtitle(
+                        products,
+                        SubscriptionPlan.lifetime,
+                        fallback: r'$79.99 one-time',
+                      ),
                     ),
                   ],
                 ),
@@ -116,13 +136,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: () {
-                  ref
-                      .read(subscriptionProvider.notifier)
-                      .setTier(SubscriptionTier.pro);
-                  context.go('/upgrade-success');
-                },
-                child: Text('Start 7-day Free Trial - $planText'),
+                onPressed: _isPurchasing ? null : _startPurchase,
+                child: _isPurchasing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text('Start 7-day Free Trial - $selectedPrice'),
               ),
             ),
             const SizedBox(height: 10),
@@ -142,7 +163,10 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                   onPressed: () {},
                   child: const Text('Cancel anytime'),
                 ),
-                TextButton(onPressed: () {}, child: const Text('Restore')),
+                TextButton(
+                  onPressed: _isPurchasing ? null : _restorePurchases,
+                  child: const Text('Restore'),
+                ),
                 TextButton(onPressed: () {}, child: const Text('Privacy')),
               ],
             ),
@@ -150,6 +174,87 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _startPurchase() async {
+    final router = GoRouter.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _isPurchasing = true);
+    try {
+      await ref
+          .read(subscriptionProvider.notifier)
+          .purchasePlan(_mapPlanToSubscriptionPlan(_selectedPlan));
+      if (!mounted) return;
+      router.go('/upgrade-success');
+    } catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isPurchasing = false);
+      }
+    }
+  }
+
+  Future<void> _restorePurchases() async {
+    final router = GoRouter.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _isPurchasing = true);
+    try {
+      final tier = await ref
+          .read(subscriptionProvider.notifier)
+          .restorePurchases();
+      if (!mounted) return;
+      if (tier == SubscriptionTier.pro) {
+        router.go('/upgrade-success');
+      } else {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('No active Pro purchase found.')),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isPurchasing = false);
+      }
+    }
+  }
+
+  SubscriptionPlan _mapPlanToSubscriptionPlan(_PaywallPlan plan) {
+    return switch (plan) {
+      _PaywallPlan.annual => SubscriptionPlan.annual,
+      _PaywallPlan.monthly => SubscriptionPlan.monthly,
+      _PaywallPlan.lifetime => SubscriptionPlan.lifetime,
+    };
+  }
+
+  String _planSubtitle(
+    List<ProductDetails> products,
+    SubscriptionPlan plan, {
+    required String fallback,
+  }) {
+    for (final product in products) {
+      if (product.id == plan.sku) {
+        if (plan == SubscriptionPlan.lifetime) {
+          return '${product.price} one-time';
+        }
+        if (plan == SubscriptionPlan.annual) {
+          return '${product.price} / year (best value)';
+        }
+        return '${product.price} / month';
+      }
+    }
+    return fallback;
   }
 }
 
