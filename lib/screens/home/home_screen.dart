@@ -149,6 +149,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 final expanded = ref.read(homeSearchExpandedProvider.notifier);
                 if (searchExpanded) {
                   expanded.setExpanded(false);
+                  ref.read(homeSearchQueryProvider.notifier).setQuery('');
                 } else {
                   expanded.setExpanded(true);
                 }
@@ -159,9 +160,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 padding: const EdgeInsets.only(right: 4),
                 child: TweenAnimationBuilder<double>(
                   key: ValueKey(streak.count),
-                  tween: Tween<double>(begin: 1.0, end: 1.25),
-                  duration: const Duration(milliseconds: 260),
-                  curve: Curves.easeOutBack,
+                  tween: Tween<double>(begin: 1.25, end: 1.0),
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.elasticOut,
                   builder: (context, scale, _) => Transform.scale(
                     scale: scale,
                     child: Chip(

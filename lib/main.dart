@@ -7,6 +7,41 @@ import 'app.dart';
 import 'core/config/supabase_config.dart';
 import 'services/notification_service.dart';
 
+Future<void> _openHiveBoxes() async {
+  try {
+    await Future.wait([
+      Hive.openBox<bool>('mastered'),
+      Hive.openBox<bool>('bookmarks'),
+      Hive.openBox('profile'),
+      Hive.openBox('settings'),
+      Hive.openBox('subscription'),
+      Hive.openBox<String>('review_schedules'),
+      Hive.openBox<int>('study_dates'),
+    ]);
+  } catch (_) {
+    // One or more boxes failed to open (corrupted file, storage permission
+    // denied on first launch). Delete the corrupted box and re-open fresh.
+    const boxNames = [
+      'mastered',
+      'bookmarks',
+      'profile',
+      'settings',
+      'subscription',
+      'review_schedules',
+      'study_dates',
+    ];
+    for (final name in boxNames) {
+      if (Hive.isBoxOpen(name)) continue;
+      try {
+        await Hive.openBox(name);
+      } catch (_) {
+        await Hive.deleteBoxFromDisk(name);
+        await Hive.openBox(name);
+      }
+    }
+  }
+}
+
 Future<void> _migrateLegacyUserName() async {
   final prefs = await SharedPreferences.getInstance();
   final legacy = prefs.getString('user_name')?.trim();
@@ -23,16 +58,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
 
-  // Open persistence boxes
-  await Future.wait([
-    Hive.openBox<bool>('mastered'),
-    Hive.openBox<bool>('bookmarks'),
-    Hive.openBox('profile'),
-    Hive.openBox('settings'),
-    Hive.openBox('subscription'),
-    Hive.openBox<String>('review_schedules'),
-    Hive.openBox<int>('study_dates'),
-  ]);
+  // Open persistence boxes — recover from corruption by deleting and re-opening.
+  await _openHiveBoxes();
 
   await _migrateLegacyUserName();
   await initializeSupabaseIfConfigured();

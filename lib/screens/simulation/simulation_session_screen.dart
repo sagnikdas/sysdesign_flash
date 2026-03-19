@@ -144,9 +144,14 @@ class _SimulationSessionScreenState extends State<SimulationSessionScreen> {
         .intersection(_session.hintCardIds.toSet())
         .length;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Simulation Session'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmEndSession();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Simulation Session'),
         actions: [
           IconButton(
             tooltip: 'End session',
@@ -300,6 +305,8 @@ class _SimulationSessionScreenState extends State<SimulationSessionScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 }
+

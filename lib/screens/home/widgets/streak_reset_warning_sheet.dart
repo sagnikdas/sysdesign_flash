@@ -15,7 +15,7 @@ class StreakResetWarningSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final title = isPro ? 'Streak reset incoming' : 'Streak reset incoming';
+    const title = 'Your streak has ended';
     final cta = isPro ? 'Start smart session' : 'Start studying';
 
     return Padding(
@@ -47,7 +47,7 @@ class StreakResetWarningSheet extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'You are currently on a ${streakCount}-day streak, but you missed a day. When you study again, your streak will reset to 1 unless you keep going from here.',
+            'Your ${streakCount}-day streak ended after a missed day. Study now to start a fresh streak from 1.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
