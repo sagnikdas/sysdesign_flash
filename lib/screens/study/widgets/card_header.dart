@@ -15,28 +15,34 @@ class CardHeader extends StatelessWidget {
       children: [
         Row(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: concept.color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(concept.icon, style: const TextStyle(fontSize: 16)),
-                  const SizedBox(width: 6),
-                  Text(
-                    concept.category,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: concept.color,
-                      fontWeight: FontWeight.w600,
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: concept.color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Text(concept.icon, style: const TextStyle(fontSize: 16)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        concept.category,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: concept.color,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             _DifficultyBadge(difficulty: concept.difficulty),
           ],
         ),
