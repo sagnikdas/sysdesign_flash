@@ -105,17 +105,6 @@ final appRouter = GoRouter(
           _fadeThroughPage(state: state, child: const AuthScreen()),
     ),
     GoRoute(
-      path: '/study/:deckId',
-      pageBuilder: (context, state) {
-        final deckId = state.pathParameters['deckId'] ?? 'all';
-        return _sharedAxisPage(
-          state: state,
-          type: SharedAxisTransitionType.horizontal,
-          child: CardScreen(deckId: deckId),
-        );
-      },
-    ),
-    GoRoute(
       path: '/study/concepts',
       pageBuilder: (context, state) {
         final extra = state.extra;
@@ -126,6 +115,17 @@ final appRouter = GoRouter(
           state: state,
           type: SharedAxisTransitionType.horizontal,
           child: CardScreen(deckId: 'concepts', conceptIds: ids),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/study/:deckId',
+      pageBuilder: (context, state) {
+        final deckId = state.pathParameters['deckId'] ?? 'all';
+        return _sharedAxisPage(
+          state: state,
+          type: SharedAxisTransitionType.horizontal,
+          child: CardScreen(deckId: deckId),
         );
       },
     ),
