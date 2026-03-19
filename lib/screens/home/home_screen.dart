@@ -17,6 +17,7 @@ import 'widgets/category_filter_bar.dart';
 import 'widgets/concept_grid_card.dart';
 import 'widgets/difficulty_filter_bar.dart';
 import 'widgets/home_search_field.dart';
+import 'widgets/interview_simulation_banner.dart';
 import 'widgets/streak_reset_warning_sheet.dart';
 import 'widgets/smart_queue_banner.dart';
 
@@ -196,6 +197,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: ProGate(
               featureTitle: 'Smart Queue',
               child: SmartQueueBanner(),
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          sliver: const SliverToBoxAdapter(
+            child: ProGate(
+              featureTitle: 'Interview Simulation',
+              child: InterviewSimulationBanner(),
             ),
           ),
         ),

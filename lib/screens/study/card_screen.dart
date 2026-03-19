@@ -19,8 +19,13 @@ import 'widgets/streak_milestone_sheet.dart';
 
 class CardScreen extends ConsumerStatefulWidget {
   final String deckId;
+  final List<int>? conceptIds;
 
-  const CardScreen({super.key, required this.deckId});
+  const CardScreen({
+    super.key,
+    required this.deckId,
+    this.conceptIds,
+  });
 
   @override
   ConsumerState<CardScreen> createState() => _CardScreenState();
@@ -42,7 +47,14 @@ class _CardScreenState extends ConsumerState<CardScreen>
   @override
   void initState() {
     super.initState();
-    if (widget.deckId == 'smart') {
+    if (widget.conceptIds != null) {
+      _startedAt = DateTime.now();
+      final conceptById = {for (final c in allConcepts) c.id: c};
+      _cards = widget.conceptIds!
+          .map((id) => conceptById[id])
+          .whereType<Concept>()
+          .toList(growable: false);
+    } else if (widget.deckId == 'smart') {
       // Smart sessions are built by SM-2 queue prioritization.
       final session = ref.read(studySessionProvider(maxNew: 5));
       _startedAt = session.startedAt;

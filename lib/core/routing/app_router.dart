@@ -8,7 +8,12 @@ import '../../screens/progress/progress_screen.dart';
 import '../../screens/settings/settings_screen.dart';
 import '../../screens/study/card_screen.dart';
 import '../../screens/paywall/paywall_screen.dart';
+import '../../screens/simulation/simulation_results_screen.dart';
+import '../../screens/simulation/simulation_session_screen.dart';
+import '../../screens/simulation/simulation_setup_screen.dart';
 import '../../shared/widgets/app_scaffold.dart';
+import '../../shared/widgets/pro_gate.dart';
+import '../../domain/models/simulation_session.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -48,6 +53,55 @@ final appRouter = GoRouter(
       builder: (context, state) {
         final deckId = state.pathParameters['deckId'] ?? 'all';
         return CardScreen(deckId: deckId);
+      },
+    ),
+    GoRoute(
+      path: '/study/concepts',
+      builder: (context, state) {
+        final extra = state.extra;
+        final ids = extra is List<int>
+            ? extra
+            : (extra is List ? extra.cast<int>() : const <int>[]);
+        return CardScreen(deckId: 'concepts', conceptIds: ids);
+      },
+    ),
+    GoRoute(
+      path: '/simulation',
+      builder: (context, state) => ProGate(
+        featureTitle: 'Interview Simulation',
+        child: const SimulationSetupScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/simulation/session',
+      builder: (context, state) {
+        final extra = state.extra;
+        final session = extra is SimulationSession ? extra : null;
+
+        return ProGate(
+          featureTitle: 'Interview Simulation',
+          child: session == null
+              ? const Scaffold(
+                  body: Center(child: Text('Simulation session unavailable')),
+                )
+              : SimulationSessionScreen(session: session),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/simulation/results',
+      builder: (context, state) {
+        final extra = state.extra;
+        final session = extra is SimulationSession ? extra : null;
+
+        return ProGate(
+          featureTitle: 'Interview Simulation',
+          child: session == null
+              ? const Scaffold(
+                  body: Center(child: Text('Simulation results unavailable')),
+                )
+              : SimulationResultsScreen(session: session),
+        );
       },
     ),
     GoRoute(
