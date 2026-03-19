@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/all_concepts.dart';
 import '../../domain/models/concept.dart';
+import '../../providers/mastered_provider.dart';
+import '../../providers/bookmarks_provider.dart';
+import '../../providers/streak_provider.dart';
 import 'widgets/swipeable_card.dart';
 import 'widgets/card_stack_effect.dart';
 import 'widgets/session_complete_sheet.dart';
@@ -23,8 +26,8 @@ class _CardScreenState extends ConsumerState<CardScreen>
   int _currentIndex = 0;
   int _gotItCount = 0;
   late DateTime _startedAt;
+  bool _streakRecorded = false;
 
-  // Card enter animation
   late AnimationController _enterController;
   late Animation<double> _enterScale;
   late Animation<double> _enterOpacity;
@@ -34,7 +37,6 @@ class _CardScreenState extends ConsumerState<CardScreen>
     super.initState();
     _startedAt = DateTime.now();
 
-    // Build card list based on deckId
     if (widget.deckId == 'all') {
       _cards = List.of(allConcepts);
     } else {
@@ -63,8 +65,17 @@ class _CardScreenState extends ConsumerState<CardScreen>
   }
 
   void _onSwiped(SwipeDirection direction) {
+    final concept = _cards[_currentIndex];
+
     if (direction == SwipeDirection.right) {
       _gotItCount++;
+      ref.read(masteredProvider.notifier).markMastered(concept.id);
+    }
+
+    // Record streak on first swipe of the session
+    if (!_streakRecorded) {
+      ref.read(streakProvider.notifier).recordStudy();
+      _streakRecorded = true;
     }
 
     setState(() {
@@ -90,7 +101,7 @@ class _CardScreenState extends ConsumerState<CardScreen>
         gotItCount: _gotItCount,
         elapsed: elapsed,
         onDone: () {
-          Navigator.of(context).pop(); // close sheet
+          Navigator.of(context).pop();
           context.go('/home');
         },
       ),
@@ -101,6 +112,7 @@ class _CardScreenState extends ConsumerState<CardScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isComplete = _currentIndex >= _cards.length;
+    final bookmarks = ref.watch(bookmarksProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -108,25 +120,30 @@ class _CardScreenState extends ConsumerState<CardScreen>
             ? const Text('Done!')
             : Text('${_currentIndex + 1} / ${_cards.length}'),
         actions: [
-          if (!isComplete)
+          if (!isComplete) ...[
             IconButton(
-              icon: const Icon(Icons.bookmark_outline),
-              onPressed: () {},
+              icon: Icon(
+                bookmarks.contains(_cards[_currentIndex].id)
+                    ? Icons.bookmark
+                    : Icons.bookmark_outline,
+              ),
+              onPressed: () => ref
+                  .read(bookmarksProvider.notifier)
+                  .toggle(_cards[_currentIndex].id),
             ),
+          ],
         ],
       ),
       body: isComplete
           ? const SizedBox.shrink()
           : Column(
               children: [
-                // Progress bar
                 LinearProgressIndicator(
                   value: _cards.isEmpty
                       ? 0
                       : _currentIndex / _cards.length,
                   minHeight: 3,
                 ),
-                // Card area
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -146,33 +163,24 @@ class _CardScreenState extends ConsumerState<CardScreen>
                     ),
                   ),
                 ),
-                // Bottom hint
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.arrow_back,
-                          size: 16,
-                          color: theme.colorScheme.outline),
+                          size: 16, color: theme.colorScheme.outline),
                       const SizedBox(width: 4),
-                      Text(
-                        'Review',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.outline,
-                        ),
-                      ),
+                      Text('Review',
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: theme.colorScheme.outline)),
                       const SizedBox(width: 24),
-                      Text(
-                        'Got It',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.outline,
-                        ),
-                      ),
+                      Text('Got It',
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: theme.colorScheme.outline)),
                       const SizedBox(width: 4),
                       Icon(Icons.arrow_forward,
-                          size: 16,
-                          color: theme.colorScheme.outline),
+                          size: 16, color: theme.colorScheme.outline),
                     ],
                   ),
                 ),

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../providers/concepts_provider.dart';
 import '../../providers/deck_filter_provider.dart';
+import '../../providers/mastered_provider.dart';
+import '../../providers/streak_provider.dart';
 import 'widgets/welcome_banner.dart';
 import 'widgets/category_filter_bar.dart';
 import 'widgets/concept_grid_card.dart';
@@ -18,6 +20,8 @@ class HomeScreen extends ConsumerWidget {
     final categories = ref.watch(categoriesProvider);
     final concepts = ref.watch(filteredConceptsProvider(selectedCategory));
     final totalConcepts = ref.watch(conceptsProvider).length;
+    final mastered = ref.watch(masteredProvider);
+    final streak = ref.watch(streakProvider);
 
     return CustomScrollView(
       slivers: [
@@ -31,23 +35,31 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
           actions: [
+            if (streak.count > 0)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Chip(
+                  avatar: const Text('🔥', style: TextStyle(fontSize: 14)),
+                  label: Text('${streak.count}'),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                ),
+              ),
             IconButton(
               icon: const Icon(Icons.settings_outlined),
               onPressed: () => context.push('/settings'),
             ),
           ],
         ),
-        // Welcome banner
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           sliver: SliverToBoxAdapter(
             child: WelcomeBanner(
-              masteredCount: 0,
+              masteredCount: mastered.length,
               totalCount: totalConcepts,
             ),
           ),
         ),
-        // Category filter
         SliverToBoxAdapter(
           child: CategoryFilterBar(
             categories: categories,
@@ -57,7 +69,6 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 12)),
-        // Concept grid
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverGrid(
@@ -72,6 +83,7 @@ class HomeScreen extends ConsumerWidget {
                 final concept = concepts[index];
                 return ConceptGridCard(
                   concept: concept,
+                  isMastered: mastered.contains(concept.id),
                   onTap: () => context.push('/study/${concept.category}'),
                 );
               },
@@ -79,7 +91,6 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
         ),
-        // Bottom spacing
         const SliverToBoxAdapter(child: SizedBox(height: 16)),
       ],
     );

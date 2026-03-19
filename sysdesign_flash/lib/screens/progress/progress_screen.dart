@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ProgressScreen extends StatelessWidget {
+import '../../providers/concepts_provider.dart';
+import '../../providers/mastered_provider.dart';
+import '../../providers/streak_provider.dart';
+import 'widgets/stats_overview.dart';
+import 'widgets/category_progress_card.dart';
+
+class ProgressScreen extends ConsumerWidget {
   const ProgressScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final allConceptsList = ref.watch(conceptsProvider);
+    final mastered = ref.watch(masteredProvider);
+    final streak = ref.watch(streakProvider);
+    final categories = ref.watch(categoriesProvider);
+
+    final total = allConceptsList.length;
+    final masteredCount = mastered.length;
+    final remaining = total - masteredCount;
 
     return CustomScrollView(
       slivers: [
@@ -13,28 +28,146 @@ class ProgressScreen extends StatelessWidget {
           floating: true,
           title: Text('Progress'),
         ),
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.bar_chart_outlined,
-                  size: 64,
-                  color: theme.colorScheme.outlineVariant,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Your progress will appear here',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+        // Stats overview
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          sliver: SliverToBoxAdapter(
+            child: StatsOverview(
+              total: total,
+              mastered: masteredCount,
+              remaining: remaining,
+              streak: streak.count,
             ),
           ),
         ),
+        // Overall progress
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: SliverToBoxAdapter(
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Overall Mastery',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          total > 0
+                              ? '${(masteredCount / total * 100).round()}%'
+                              : '0%',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(
+                        begin: 0,
+                        end: total > 0 ? masteredCount / total : 0.0,
+                      ),
+                      duration: const Duration(milliseconds: 800),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, _) =>
+                          LinearProgressIndicator(
+                        value: value,
+                        minHeight: 10,
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 16)),
+        // Per-category breakdown
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: SliverToBoxAdapter(
+            child: Text(
+              'By Category',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 8)),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final category = categories[index];
+                final catConcepts = allConceptsList
+                    .where((c) => c.category == category)
+                    .toList();
+                final catMastered = catConcepts
+                    .where((c) => mastered.contains(c.id))
+                    .length;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: CategoryProgressCard(
+                    category: category,
+                    mastered: catMastered,
+                    total: catConcepts.length,
+                    delay: index * 80,
+                  ),
+                );
+              },
+              childCount: categories.length,
+            ),
+          ),
+        ),
+        // Pro teaser
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverToBoxAdapter(
+            child: Card(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.workspace_premium,
+                      color: theme.colorScheme.primary,
+                      size: 32,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Study smarter with Pro',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'SM-2 scheduling, analytics heatmap, interview simulation',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 16)),
       ],
     );
   }
