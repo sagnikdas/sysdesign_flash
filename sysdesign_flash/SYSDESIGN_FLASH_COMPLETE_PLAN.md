@@ -788,6 +788,7 @@ Providers:
 ```
 /                    → SplashScreen
 /onboarding          → OnboardingScreen (3 pages)
+/auth                → AuthScreen (Google Sign-In · Email/Password)
 /home                → HomeScreen (concept grid)
 /home/progress       → ProgressScreen
 /home/settings       → SettingsScreen
@@ -829,7 +830,7 @@ domain/
   review_schedule.dart      → SM-2 fields: easiness, interval, repetitions,
                               nextReview, lastQuality
   study_session.dart        → cardOrder, currentIndex, gotItCount, startedAt
-  user_profile.dart         → name, streak, joinDate, dailyGoal
+  user_profile.dart         → name, photoUrl, phone, locale, streak, joinDate, dailyGoal
 ```
 
 ---
@@ -850,6 +851,9 @@ flutter pub add animations
 flutter pub add hive hive_flutter
 flutter pub add shared_preferences
 flutter pub add in_app_purchase
+flutter pub add google_sign_in          # Google OAuth + contact details
+flutter pub add supabase_flutter        # Supabase Auth + DB client
+flutter pub add http                    # Google People API call
 flutter pub add dev:build_runner dev:riverpod_generator dev:hive_generator
 ```
 
@@ -1205,6 +1209,9 @@ Supabase
 CREATE TABLE user_profiles (
   user_id        uuid PRIMARY KEY REFERENCES auth.users,
   display_name   text,
+  photo_url      text,            -- Google avatar URL (may be null)
+  phone          text,            -- from Google People API (often null)
+  locale         text,            -- e.g. "en-US" from Google ID token
   streak         integer DEFAULT 0,
   last_study_date date,
   daily_goal     integer DEFAULT 10,
@@ -1300,10 +1307,99 @@ Offline-first:
   → Sync is additive, never destructive
 ```
 
+### Google Sign-In — Contact Details Capture
+
+Google Sign-In via the `google_sign_in` package captures richer contact data than
+email/password auth. Fields obtained and their reliability:
+
+| Field | Source | Reliability |
+|---|---|---|
+| Email | Standard OAuth (ID token) | Always present |
+| Full name | Standard OAuth (ID token) | Always present |
+| Profile photo URL | Standard OAuth (ID token) | Almost always present |
+| Locale | Supabase `userMetadata` / `Platform.localeName` fallback | Usually present |
+| Phone number | Google People API (extra OAuth scope) | Often empty — optional field |
+
+**OAuth scopes requested:**
+- Standard (no extra prompt): `openid`, `profile`, `email`
+- Extra (shows additional permission prompt): `https://www.googleapis.com/auth/user.phonenumbers.read`
+
+**Sign-in flow (`lib/services/auth_service.dart`):**
+
+```dart
+final GoogleSignIn _googleSignIn = GoogleSignIn(
+  scopes: [
+    'openid',
+    'profile',
+    'email',
+    'https://www.googleapis.com/auth/user.phonenumbers.read',
+  ],
+);
+
+Future<void> signInWithGoogle() async {
+  // 1. Trigger Google sign-in
+  final googleUser = await _googleSignIn.signIn();
+  if (googleUser == null) return; // user cancelled
+
+  final googleAuth = await googleUser.authentication;
+
+  // 2. Sign in to Supabase with Google token
+  await supabase.auth.signInWithIdToken(
+    provider: OAuthProvider.google,
+    idToken: googleAuth.idToken!,
+    accessToken: googleAuth.accessToken,
+  );
+
+  // 3. Fetch phone number from Google People API (optional — never blocks sign-in)
+  String? phone;
+  try {
+    final response = await http.get(
+      Uri.parse(
+        'https://people.googleapis.com/v1/people/me?personFields=phoneNumbers',
+      ),
+      headers: {'Authorization': 'Bearer ${googleAuth.accessToken}'},
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      phone = data['phoneNumbers']?[0]?['value'];
+    }
+  } catch (_) {
+    // phone is optional — silently ignore failures
+  }
+
+  // 4. Upsert all captured fields into user_profiles
+  final user = supabase.auth.currentUser!;
+  final meta = user.userMetadata ?? {};
+
+  await supabase.from('user_profiles').upsert({
+    'user_id':      user.id,
+    'display_name': meta['full_name'] ?? googleUser.displayName,
+    'photo_url':    meta['avatar_url'] ?? googleUser.photoUrl,
+    'locale':       meta['locale'] ?? Platform.localeName,
+    'phone':        phone, // null if not provided — never blocks sign-in
+  });
+}
+```
+
+**Key constraints:**
+- `phone` is always optional. Store `null` if absent; never gate sign-in on it.
+- Display a brief "What we store" note on the sign-in screen (GDPR requirement).
+- Include photo and phone in the existing Settings → data-export flow.
+
+**Supabase migration SQL** (run once against existing `user_profiles` table):
+```sql
+ALTER TABLE user_profiles
+  ADD COLUMN photo_url text,
+  ADD COLUMN phone     text,
+  ADD COLUMN locale    text;
+```
+
 ### Privacy & data
 
-- No PII stored beyond email and display name
+- PII stored: email, display name, profile photo URL, locale, and optionally phone number
+- Users are informed of stored fields on the sign-in screen (GDPR transparency)
 - Progress data is user-owned: export via Settings, delete within 30 days
+- Photo, phone, and locale are included in the data-export and deletion flows
 - GDPR compliant: data deletion cascades on account deletion
 - Pro data kept 30 days after subscription lapses (offer to re-subscribe)
 
@@ -1511,11 +1607,14 @@ sysdesign_flash/
 │   │   └── settings_provider.dart
 │   │
 │   ├── services/
+│   │   ├── auth_service.dart               ← Google Sign-In + People API + Supabase upsert
 │   │   ├── billing_service.dart            ← in_app_purchase wrapper
 │   │   ├── sync_service.dart               ← Supabase sync logic
 │   │   └── notification_service.dart       ← daily reminders (Pro)
 │   │
 │   ├── screens/
+│   │   ├── auth/
+│   │   │   └── auth_screen.dart            ← Sign-in UI: Google button + "What we store" note
 │   │   ├── splash/
 │   │   │   └── splash_screen.dart
 │   │   ├── onboarding/
