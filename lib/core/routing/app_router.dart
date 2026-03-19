@@ -8,6 +8,7 @@ import '../../screens/progress/progress_screen.dart';
 import '../../screens/settings/settings_screen.dart';
 import '../../screens/study/card_screen.dart';
 import '../../screens/paywall/paywall_screen.dart';
+import '../../screens/paywall/upgrade_success_screen.dart';
 import '../../screens/simulation/simulation_results_screen.dart';
 import '../../screens/simulation/simulation_session_screen.dart';
 import '../../screens/simulation/simulation_setup_screen.dart';
@@ -22,10 +23,7 @@ final appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: '/splash',
   routes: [
-    GoRoute(
-      path: '/splash',
-      builder: (context, state) => const SplashScreen(),
-    ),
+    GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
     GoRoute(
       path: '/onboarding',
       builder: (context, state) => const OnboardingScreen(),
@@ -34,10 +32,7 @@ final appRouter = GoRouter(
       navigatorKey: _shellNavigatorKey,
       builder: (context, state, child) => AppScaffold(child: child),
       routes: [
-        GoRoute(
-          path: '/home',
-          builder: (context, state) => const HomeScreen(),
-        ),
+        GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
         GoRoute(
           path: '/progress',
           builder: (context, state) => const ProgressScreen(),
@@ -69,6 +64,8 @@ final appRouter = GoRouter(
       path: '/simulation',
       builder: (context, state) => ProGate(
         featureTitle: 'Interview Simulation',
+        featureDescription:
+            'Practice timed system design rounds with scenario-based prompts.',
         child: const SimulationSetupScreen(),
       ),
     ),
@@ -80,6 +77,8 @@ final appRouter = GoRouter(
 
         return ProGate(
           featureTitle: 'Interview Simulation',
+          featureDescription:
+              'Practice timed system design rounds with scenario-based prompts.',
           child: session == null
               ? const Scaffold(
                   body: Center(child: Text('Simulation session unavailable')),
@@ -96,6 +95,8 @@ final appRouter = GoRouter(
 
         return ProGate(
           featureTitle: 'Interview Simulation',
+          featureDescription:
+              'Practice timed system design rounds with scenario-based prompts.',
           child: session == null
               ? const Scaffold(
                   body: Center(child: Text('Simulation results unavailable')),
@@ -107,6 +108,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/paywall',
       builder: (context, state) => const PaywallScreen(),
+    ),
+    GoRoute(
+      path: '/upgrade-success',
+      builder: (context, state) => const UpgradeSuccessScreen(),
     ),
   ],
 );

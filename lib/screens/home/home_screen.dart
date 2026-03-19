@@ -83,7 +83,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onStart: () {
           Navigator.of(context).pop();
           context.push(
-            subscriptionTier == SubscriptionTier.pro ? '/study/smart' : '/study/all',
+            subscriptionTier == SubscriptionTier.pro
+                ? '/study/smart'
+                : '/study/all',
           );
         },
       ),
@@ -135,9 +137,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             IconButton(
               tooltip: searchExpanded ? 'Close search' : 'Search concepts',
-              icon: Icon(
-                searchExpanded ? Icons.close : Icons.search,
-              ),
+              icon: Icon(searchExpanded ? Icons.close : Icons.search),
               onPressed: () {
                 final expanded = ref.read(homeSearchExpandedProvider.notifier);
                 if (searchExpanded) {
@@ -158,8 +158,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   builder: (context, scale, _) => Transform.scale(
                     scale: scale,
                     child: Chip(
-                      avatar:
-                          const Text('🔥', style: TextStyle(fontSize: 14)),
+                      avatar: const Text('🔥', style: TextStyle(fontSize: 14)),
                       label: Text('${streak.count}'),
                       visualDensity: VisualDensity.compact,
                       padding: EdgeInsets.zero,
@@ -176,9 +175,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (searchExpanded)
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            sliver: const SliverToBoxAdapter(
-              child: HomeSearchField(),
-            ),
+            sliver: const SliverToBoxAdapter(child: HomeSearchField()),
           ),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -196,6 +193,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           sliver: const SliverToBoxAdapter(
             child: ProGate(
               featureTitle: 'Smart Queue',
+              featureDescription:
+                  'Prioritize due, weak, and new cards with SM-2 scheduling.',
               child: SmartQueueBanner(),
             ),
           ),
@@ -205,6 +204,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           sliver: const SliverToBoxAdapter(
             child: ProGate(
               featureTitle: 'Interview Simulation',
+              featureDescription:
+                  'Run timed scenarios with hints and post-session review.',
               child: InterviewSimulationBanner(),
             ),
           ),
@@ -253,15 +254,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       weak.category,
                                       style: theme.textTheme.bodyMedium
                                           ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -270,8 +270,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       'Weakness: ${(weak.weaknessRatio * 100).round()}%',
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
-                                        color: theme.colorScheme.onSurfaceVariant,
-                                      ),
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -335,17 +337,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 crossAxisSpacing: 10,
                 childAspectRatio: 0.9,
               ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final concept = concepts[index];
-                  return ConceptGridCard(
-                    concept: concept,
-                    isMastered: mastered.contains(concept.id),
-                    onTap: () => context.push('/study/${concept.category}'),
-                  );
-                },
-                childCount: concepts.length,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final concept = concepts[index];
+                return ConceptGridCard(
+                  concept: concept,
+                  isMastered: mastered.contains(concept.id),
+                  onTap: () => context.push('/study/${concept.category}'),
+                );
+              }, childCount: concepts.length),
             ),
           ),
         const SliverToBoxAdapter(child: SizedBox(height: 16)),

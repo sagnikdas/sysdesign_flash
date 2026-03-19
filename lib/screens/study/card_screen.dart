@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hive/hive.dart';
 
 import '../../data/all_concepts.dart';
 import '../../domain/models/concept.dart';
@@ -21,11 +22,7 @@ class CardScreen extends ConsumerStatefulWidget {
   final String deckId;
   final List<int>? conceptIds;
 
-  const CardScreen({
-    super.key,
-    required this.deckId,
-    this.conceptIds,
-  });
+  const CardScreen({super.key, required this.deckId, this.conceptIds});
 
   @override
   ConsumerState<CardScreen> createState() => _CardScreenState();
@@ -70,9 +67,7 @@ class _CardScreenState extends ConsumerState<CardScreen>
       if (widget.deckId == 'all') {
         _cards = List.of(allConcepts);
       } else {
-        _cards = allConcepts
-            .where((c) => c.category == widget.deckId)
-            .toList();
+        _cards = allConcepts.where((c) => c.category == widget.deckId).toList();
       }
     }
 
@@ -83,9 +78,10 @@ class _CardScreenState extends ConsumerState<CardScreen>
     _enterScale = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(parent: _enterController, curve: Curves.easeOutBack),
     );
-    _enterOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _enterController, curve: Curves.easeOut),
-    );
+    _enterOpacity = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _enterController, curve: Curves.easeOut));
     _enterController.forward();
   }
 
@@ -111,18 +107,19 @@ class _CardScreenState extends ConsumerState<CardScreen>
     // SM-2 scheduling for Pro users.
     if (isPro) {
       final isLastCard = _currentIndex + 1 >= _cards.length;
-      final updatedSchedule =
-          ref.read(spacedRepetitionProvider.notifier).recordReview(
-                concept.id,
-                quality,
-              );
+      final updatedSchedule = ref
+          .read(spacedRepetitionProvider.notifier)
+          .recordReview(concept.id, quality);
 
       if (!isLastCard) {
-        final nextDate =
-            updatedSchedule.nextReview.toLocal().toIso8601String().split('T').first;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Next review: $nextDate')),
-        );
+        final nextDate = updatedSchedule.nextReview
+            .toLocal()
+            .toIso8601String()
+            .split('T')
+            .first;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Next review: $nextDate')));
       }
     }
 
@@ -179,6 +176,8 @@ class _CardScreenState extends ConsumerState<CardScreen>
         elapsed: elapsed,
         onDone: () {
           Navigator.of(context).pop();
+          final completedSessions = _incrementCompletedSessionsCount();
+          final isPro = ref.read(subscriptionProvider) == SubscriptionTier.pro;
           final pending = _pendingStreakMilestone;
           _pendingStreakMilestone = null;
           if (pending != null) {
@@ -186,18 +185,62 @@ class _CardScreenState extends ConsumerState<CardScreen>
               context: context,
               isDismissible: false,
               enableDrag: false,
-              builder: (_) =>
-                  StreakMilestoneSheet(streakCount: pending),
+              builder: (_) => StreakMilestoneSheet(streakCount: pending),
             ).whenComplete(() {
               if (!mounted) return;
-              context.go('/home');
+              _completeSessionNavigation(
+                completedSessions: completedSessions,
+                isPro: isPro,
+              );
             });
           } else {
-            context.go('/home');
+            _completeSessionNavigation(
+              completedSessions: completedSessions,
+              isPro: isPro,
+            );
           }
         },
       ),
     );
+  }
+
+  int _incrementCompletedSessionsCount() {
+    final settingsBox = Hive.box('settings');
+    final current = settingsBox.get(
+      'completed_sessions_count',
+      defaultValue: 0,
+    );
+    final count = current is int ? current + 1 : 1;
+    settingsBox.put('completed_sessions_count', count);
+    return count;
+  }
+
+  void _completeSessionNavigation({
+    required int completedSessions,
+    required bool isPro,
+  }) {
+    if (!mounted) return;
+
+    final shouldShowNudge = !isPro && completedSessions % 5 == 0;
+    if (shouldShowNudge) {
+      showModalBottomSheet(
+        context: context,
+        showDragHandle: true,
+        builder: (_) => _SessionEndProNudge(
+          onTryPro: () {
+            Navigator.of(context).pop();
+            context.go('/paywall');
+          },
+          onContinueFree: () {
+            Navigator.of(context).pop();
+            context.go('/home');
+          },
+        ),
+      );
+      return;
+    }
+
+    context.go('/home');
   }
 
   @override
@@ -214,17 +257,14 @@ class _CardScreenState extends ConsumerState<CardScreen>
             : Text('${_currentIndex + 1} / ${_cards.length}'),
         actions: [
           if (!isComplete) ...[
-            if (kDebugMode &&
-                subscriptionTier == SubscriptionTier.pro) ...[
-                  IconButton(
-                    tooltip: 'Quality 0 (Fail)',
-                    icon: const Icon(Icons.broken_image_outlined),
-                    onPressed: () => _reviewAndAdvance(
-                      quality: 0,
-                      markMastered: false,
-                    ),
-                  ),
-                ],
+            if (kDebugMode && subscriptionTier == SubscriptionTier.pro) ...[
+              IconButton(
+                tooltip: 'Quality 0 (Fail)',
+                icon: const Icon(Icons.broken_image_outlined),
+                onPressed: () =>
+                    _reviewAndAdvance(quality: 0, markMastered: false),
+              ),
+            ],
             IconButton(
               icon: Icon(
                 bookmarks.contains(_cards[_currentIndex].id)
@@ -243,9 +283,7 @@ class _CardScreenState extends ConsumerState<CardScreen>
           : Column(
               children: [
                 LinearProgressIndicator(
-                  value: _cards.isEmpty
-                      ? 0
-                      : _currentIndex / _cards.length,
+                  value: _cards.isEmpty ? 0 : _currentIndex / _cards.length,
                   minHeight: 3,
                 ),
                 Expanded(
@@ -272,24 +310,92 @@ class _CardScreenState extends ConsumerState<CardScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.arrow_back,
-                          size: 16, color: theme.colorScheme.outline),
+                      Icon(
+                        Icons.arrow_back,
+                        size: 16,
+                        color: theme.colorScheme.outline,
+                      ),
                       const SizedBox(width: 4),
-                      Text('Review',
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: theme.colorScheme.outline)),
+                      Text(
+                        'Review',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
                       const SizedBox(width: 24),
-                      Text('Got It',
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: theme.colorScheme.outline)),
+                      Text(
+                        'Got It',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
                       const SizedBox(width: 4),
-                      Icon(Icons.arrow_forward,
-                          size: 16, color: theme.colorScheme.outline),
+                      Icon(
+                        Icons.arrow_forward,
+                        size: 16,
+                        color: theme.colorScheme.outline,
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
+    );
+  }
+}
+
+class _SessionEndProNudge extends StatelessWidget {
+  final VoidCallback onTryPro;
+  final VoidCallback onContinueFree;
+
+  const _SessionEndProNudge({
+    required this.onTryPro,
+    required this.onContinueFree,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You are on a roll',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Pro users master concepts 3x faster with smart queues and targeted reviews.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: onTryPro,
+                child: const Text('Try Pro free for 7 days'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: onContinueFree,
+                child: const Text('Continue without Pro'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

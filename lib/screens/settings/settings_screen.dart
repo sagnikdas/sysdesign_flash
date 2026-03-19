@@ -43,11 +43,13 @@ class SettingsScreen extends ConsumerWidget {
           if (kDebugMode)
             SwitchListTile(
               secondary: const Icon(Icons.workspace_premium_outlined),
-              title: const Text('Debug: Pro mode'),
+              title: const Text('Debug: Toggle Pro'),
               value: ref.watch(subscriptionProvider) == SubscriptionTier.pro,
               onChanged: (value) => ref
                   .read(subscriptionProvider.notifier)
-                  .setTier(value ? SubscriptionTier.pro : SubscriptionTier.free),
+                  .setTier(
+                    value ? SubscriptionTier.pro : SubscriptionTier.free,
+                  ),
             ),
           const Divider(),
           ListTile(
@@ -56,10 +58,7 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () {},
           ),
           ListTile(
-            leading: Icon(
-              Icons.delete_outline,
-              color: theme.colorScheme.error,
-            ),
+            leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
             title: Text(
               'Reset Progress',
               style: TextStyle(color: theme.colorScheme.error),
@@ -100,15 +99,14 @@ class SettingsScreen extends ConsumerWidget {
               ref.read(masteredProvider.notifier).clearAll();
               ref.read(streakProvider.notifier).reset();
               // Clear bookmarks too
-              final bookmarkIds =
-                  ref.read(bookmarksProvider).toList();
+              final bookmarkIds = ref.read(bookmarksProvider).toList();
               for (final id in bookmarkIds) {
                 ref.read(bookmarksProvider.notifier).toggle(id);
               }
               Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Progress reset')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Progress reset')));
             },
             child: const Text('Reset'),
           ),
