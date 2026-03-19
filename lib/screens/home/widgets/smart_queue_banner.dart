@@ -21,13 +21,11 @@ class SmartQueueBanner extends ConsumerWidget {
     final dueCount = schedules.values
         .where((s) => !s.nextReview.isAfter(now))
         .map((s) => s.conceptId)
-        .where((id) => !mastered.contains(id))
         .length;
 
     final weakCount = schedules.values
         .where((s) => s.lastQuality < 3 && s.nextReview.isAfter(now))
         .map((s) => s.conceptId)
-        .where((id) => !mastered.contains(id))
         .length;
 
     final scheduledIds = schedules.keys.toSet();
