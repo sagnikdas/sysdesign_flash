@@ -58,20 +58,31 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final fade = reduceMotion
+        ? const AlwaysStoppedAnimation<double>(1)
+        : _fadeAnimation;
+    final scale = reduceMotion
+        ? const AlwaysStoppedAnimation<double>(1)
+        : _scaleAnimation;
 
     return Scaffold(
       body: Center(
         child: FadeTransition(
-          opacity: _fadeAnimation,
+          opacity: fade,
           child: ScaleTransition(
-            scale: _scaleAnimation,
+            scale: scale,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.architecture,
-                  size: 80,
-                  color: theme.colorScheme.primary,
+                Hero(
+                  tag: 'app_logo',
+                  child: Icon(
+                    Icons.architecture,
+                    size: 80,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(

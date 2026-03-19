@@ -36,10 +36,7 @@ class ProgressScreen extends ConsumerWidget {
 
     return CustomScrollView(
       slivers: [
-        const SliverAppBar(
-          floating: true,
-          title: Text('Progress'),
-        ),
+        const SliverAppBar(floating: true, title: Text('Progress')),
         // Stats overview
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -90,8 +87,7 @@ class ProgressScreen extends ConsumerWidget {
                       ),
                       duration: const Duration(milliseconds: 800),
                       curve: Curves.easeOutCubic,
-                      builder: (context, value, _) =>
-                          LinearProgressIndicator(
+                      builder: (context, value, _) => LinearProgressIndicator(
                         value: value,
                         minHeight: 10,
                         borderRadius: BorderRadius.circular(5),
@@ -120,27 +116,24 @@ class ProgressScreen extends ConsumerWidget {
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final category = categories[index];
-                final catConcepts = allConceptsList
-                    .where((c) => c.category == category)
-                    .toList();
-                final catMastered = catConcepts
-                    .where((c) => mastered.contains(c.id))
-                    .length;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: CategoryProgressCard(
-                    category: category,
-                    mastered: catMastered,
-                    total: catConcepts.length,
-                    delay: index * 80,
-                  ),
-                );
-              },
-              childCount: categories.length,
-            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final category = categories[index];
+              final catConcepts = allConceptsList
+                  .where((c) => c.category == category)
+                  .toList();
+              final catMastered = catConcepts
+                  .where((c) => mastered.contains(c.id))
+                  .length;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: CategoryProgressCard(
+                  category: category,
+                  mastered: catMastered,
+                  total: catConcepts.length,
+                  delay: index * 50,
+                ),
+              );
+            }, childCount: categories.length),
           ),
         ),
         if (subscriptionTier == SubscriptionTier.pro) ...[
@@ -152,9 +145,7 @@ class ProgressScreen extends ConsumerWidget {
           ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            sliver: SliverToBoxAdapter(
-              child: HeatmapCalendar(days: studyDays),
-            ),
+            sliver: SliverToBoxAdapter(child: HeatmapCalendar(days: studyDays)),
           ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),

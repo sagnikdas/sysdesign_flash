@@ -11,6 +11,7 @@ import '../../providers/subscription_provider.dart';
 import '../../providers/weak_areas_provider.dart';
 import '../../providers/user_prefs_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/pro_gate.dart';
 import 'widgets/welcome_banner.dart';
 import 'widgets/category_filter_bar.dart';
@@ -115,7 +116,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           floating: true,
           title: Row(
             children: [
-              Icon(Icons.architecture, color: theme.colorScheme.primary),
+              Hero(
+                tag: 'app_logo',
+                child: Icon(
+                  Icons.architecture,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
               const SizedBox(width: 8),
               const Text('SysDesign Flash'),
             ],
@@ -314,17 +321,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (concepts.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'No concepts match your filters.\nTry another category, difficulty, or search.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
+            child: const EmptyState(
+              icon: Icons.filter_alt_off_outlined,
+              title: 'No cards in this category',
+              subtitle:
+                  'No concepts match your current filters. Try another category, difficulty, or search.',
             ),
           )
         else
@@ -342,7 +343,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 return ConceptGridCard(
                   concept: concept,
                   isMastered: mastered.contains(concept.id),
-                  onTap: () => context.push('/study/${concept.category}'),
+                  onTap: () =>
+                      context.push('/study/concepts', extra: [concept.id]),
                 );
               }, childCount: concepts.length),
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:animations/animations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../screens/splash/splash_screen.dart';
@@ -19,6 +20,48 @@ import '../../domain/models/simulation_session.dart';
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
+CustomTransitionPage<void> _sharedAxisPage({
+  required GoRouterState state,
+  required Widget child,
+  required SharedAxisTransitionType type,
+}) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final reduceMotion =
+          MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+      if (reduceMotion) return child;
+      return SharedAxisTransition(
+        animation: animation,
+        secondaryAnimation: secondaryAnimation,
+        transitionType: type,
+        child: child,
+      );
+    },
+  );
+}
+
+CustomTransitionPage<void> _fadeThroughPage({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final reduceMotion =
+          MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+      if (reduceMotion) return child;
+      return FadeThroughTransition(
+        animation: animation,
+        secondaryAnimation: secondaryAnimation,
+        child: child,
+      );
+    },
+  );
+}
+
 final appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: '/splash',
@@ -32,32 +75,52 @@ final appRouter = GoRouter(
       navigatorKey: _shellNavigatorKey,
       builder: (context, state, child) => AppScaffold(child: child),
       routes: [
-        GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+        GoRoute(
+          path: '/home',
+          pageBuilder: (context, state) => _sharedAxisPage(
+            state: state,
+            type: SharedAxisTransitionType.horizontal,
+            child: const HomeScreen(),
+          ),
+        ),
         GoRoute(
           path: '/progress',
-          builder: (context, state) => const ProgressScreen(),
+          pageBuilder: (context, state) => _sharedAxisPage(
+            state: state,
+            type: SharedAxisTransitionType.vertical,
+            child: const ProgressScreen(),
+          ),
         ),
       ],
     ),
     GoRoute(
       path: '/settings',
-      builder: (context, state) => const SettingsScreen(),
+      pageBuilder: (context, state) =>
+          _fadeThroughPage(state: state, child: const SettingsScreen()),
     ),
     GoRoute(
       path: '/study/:deckId',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final deckId = state.pathParameters['deckId'] ?? 'all';
-        return CardScreen(deckId: deckId);
+        return _sharedAxisPage(
+          state: state,
+          type: SharedAxisTransitionType.horizontal,
+          child: CardScreen(deckId: deckId),
+        );
       },
     ),
     GoRoute(
       path: '/study/concepts',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final extra = state.extra;
         final ids = extra is List<int>
             ? extra
             : (extra is List ? extra.cast<int>() : const <int>[]);
-        return CardScreen(deckId: 'concepts', conceptIds: ids);
+        return _sharedAxisPage(
+          state: state,
+          type: SharedAxisTransitionType.horizontal,
+          child: CardScreen(deckId: 'concepts', conceptIds: ids),
+        );
       },
     ),
     GoRoute(
@@ -107,11 +170,13 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/paywall',
-      builder: (context, state) => const PaywallScreen(),
+      pageBuilder: (context, state) =>
+          _fadeThroughPage(state: state, child: const PaywallScreen()),
     ),
     GoRoute(
       path: '/upgrade-success',
-      builder: (context, state) => const UpgradeSuccessScreen(),
+      pageBuilder: (context, state) =>
+          _fadeThroughPage(state: state, child: const UpgradeSuccessScreen()),
     ),
   ],
 );

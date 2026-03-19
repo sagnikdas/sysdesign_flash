@@ -31,13 +31,50 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.palette_outlined),
             title: const Text('Theme'),
-            subtitle: const Text('System default'),
-            onTap: () {},
+            subtitle: Text(switch (userPrefs.themeMode) {
+              ThemeModePreference.light => 'Light',
+              ThemeModePreference.dark => 'Dark',
+              ThemeModePreference.system => 'System',
+            }),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: SegmentedButton<ThemeModePreference>(
+              selected: {userPrefs.themeMode},
+              onSelectionChanged: (selection) {
+                ref
+                    .read(userPrefsProvider.notifier)
+                    .setThemeMode(selection.first);
+              },
+              segments: const [
+                ButtonSegment(
+                  value: ThemeModePreference.light,
+                  label: Text('Light'),
+                  icon: Icon(Icons.light_mode_outlined),
+                ),
+                ButtonSegment(
+                  value: ThemeModePreference.dark,
+                  label: Text('Dark'),
+                  icon: Icon(Icons.dark_mode_outlined),
+                ),
+                ButtonSegment(
+                  value: ThemeModePreference.system,
+                  label: Text('System'),
+                  icon: Icon(Icons.brightness_auto_outlined),
+                ),
+              ],
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.flag_outlined),
             title: const Text('Daily Goal'),
             subtitle: Text('${userPrefs.dailyGoal} cards / day'),
+            onTap: () {},
+          ),
+          ListTile(
+            leading: const Icon(Icons.notifications_none_outlined),
+            title: const Text('Notification settings'),
+            subtitle: const Text('Pro reminder controls (coming soon)'),
             onTap: () {},
           ),
           if (kDebugMode)
@@ -71,6 +108,18 @@ class SettingsScreen extends ConsumerWidget {
             leading: Icon(Icons.info_outline),
             title: Text('Version'),
             subtitle: Text('1.0.0'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.feedback_outlined),
+            title: const Text('Send Feedback'),
+            subtitle: const Text('hello@sysdesignflash.dev'),
+            onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Email hello@sysdesignflash.dev with your feedback.',
+                ),
+              ),
+            ),
           ),
         ],
       ),

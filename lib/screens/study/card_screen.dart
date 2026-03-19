@@ -13,6 +13,7 @@ import '../../providers/study_dates_provider.dart';
 import '../../providers/subscription_provider.dart';
 import '../../providers/spaced_repetition_provider.dart';
 import '../../providers/study_session_provider.dart';
+import '../../shared/widgets/empty_state.dart';
 import 'widgets/swipeable_card.dart';
 import 'widgets/card_stack_effect.dart';
 import 'widgets/session_complete_sheet.dart';
@@ -72,10 +73,10 @@ class _CardScreenState extends ConsumerState<CardScreen>
     }
 
     _enterController = AnimationController(
-      duration: const Duration(milliseconds: 350),
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _enterScale = Tween<double>(begin: 0.85, end: 1.0).animate(
+    _enterScale = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(parent: _enterController, curve: Curves.easeOutBack),
     );
     _enterOpacity = Tween<double>(
@@ -246,9 +247,16 @@ class _CardScreenState extends ConsumerState<CardScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final isComplete = _currentIndex >= _cards.length;
     final subscriptionTier = ref.watch(subscriptionProvider);
     final bookmarks = ref.watch(bookmarksProvider);
+    final mastered = ref.watch(masteredProvider);
+    final isAllMastered =
+        _cards.isNotEmpty &&
+        _cards.every((concept) => mastered.contains(concept.id));
+    final isSmartDeck = widget.deckId == 'smart' && widget.conceptIds == null;
 
     return Scaffold(
       appBar: AppBar(
@@ -280,6 +288,23 @@ class _CardScreenState extends ConsumerState<CardScreen>
       ),
       body: isComplete
           ? const SizedBox.shrink()
+          : _cards.isEmpty && isSmartDeck
+          ? const EmptyState(
+              icon: Icons.check_circle_outline,
+              title: 'All caught up!',
+              subtitle:
+                  'No cards are due today. Come back later for your next review.',
+            )
+          : isAllMastered && !isSmartDeck
+          ? EmptyState(
+              icon: Icons.celebration_outlined,
+              title: "You've mastered everything!",
+              subtitle: 'Amazing streak. Keep revisiting cards to stay sharp.',
+              action: FilledButton(
+                onPressed: () => context.go('/home'),
+                child: const Text('Back to Home'),
+              ),
+            )
           : Column(
               children: [
                 LinearProgressIndicator(
@@ -289,16 +314,22 @@ class _CardScreenState extends ConsumerState<CardScreen>
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: CardStackEffect(
-                      remainingCards: _cards.length - _currentIndex,
-                      activeCard: ScaleTransition(
-                        scale: _enterScale,
-                        child: FadeTransition(
-                          opacity: _enterOpacity,
-                          child: SwipeableCard(
-                            key: ValueKey(_cards[_currentIndex].id),
-                            concept: _cards[_currentIndex],
-                            onSwiped: _onSwiped,
+                    child: RepaintBoundary(
+                      child: CardStackEffect(
+                        remainingCards: _cards.length - _currentIndex,
+                        activeCard: ScaleTransition(
+                          scale: reduceMotion
+                              ? const AlwaysStoppedAnimation<double>(1)
+                              : _enterScale,
+                          child: FadeTransition(
+                            opacity: reduceMotion
+                                ? const AlwaysStoppedAnimation<double>(1)
+                                : _enterOpacity,
+                            child: SwipeableCard(
+                              key: ValueKey(_cards[_currentIndex].id),
+                              concept: _cards[_currentIndex],
+                              onSwiped: _onSwiped,
+                            ),
                           ),
                         ),
                       ),

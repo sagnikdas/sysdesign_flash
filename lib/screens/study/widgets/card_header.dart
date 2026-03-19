@@ -9,6 +9,7 @@ class CardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final heroTag = 'concept_header_${concept.id}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -17,7 +18,10 @@ class CardHeader extends StatelessWidget {
           children: [
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: concept.color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
@@ -25,7 +29,16 @@ class CardHeader extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.max,
                   children: [
-                    Text(concept.icon, style: const TextStyle(fontSize: 16)),
+                    Hero(
+                      tag: heroTag,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Text(
+                          concept.icon,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(

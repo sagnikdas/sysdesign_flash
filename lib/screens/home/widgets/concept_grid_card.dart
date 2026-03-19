@@ -16,6 +16,7 @@ class ConceptGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final heroTag = 'concept_header_${concept.id}';
 
     return GestureDetector(
       onTap: onTap,
@@ -24,10 +25,7 @@ class ConceptGridCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 4,
-              color: concept.color,
-            ),
+            Container(height: 4, color: concept.color),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -36,9 +34,15 @@ class ConceptGridCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          concept.icon,
-                          style: const TextStyle(fontSize: 24),
+                        Hero(
+                          tag: heroTag,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: Text(
+                              concept.icon,
+                              style: const TextStyle(fontSize: 24),
+                            ),
+                          ),
                         ),
                         const Spacer(),
                         if (isMastered)

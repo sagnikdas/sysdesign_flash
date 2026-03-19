@@ -6,22 +6,28 @@ part 'user_prefs_provider.g.dart';
 class UserPrefsState {
   final String displayName;
   final int dailyGoal;
+  final ThemeModePreference themeMode;
 
   const UserPrefsState({
     this.displayName = '',
     this.dailyGoal = 10,
+    this.themeMode = ThemeModePreference.system,
   });
 
   UserPrefsState copyWith({
     String? displayName,
     int? dailyGoal,
+    ThemeModePreference? themeMode,
   }) {
     return UserPrefsState(
       displayName: displayName ?? this.displayName,
       dailyGoal: dailyGoal ?? this.dailyGoal,
+      themeMode: themeMode ?? this.themeMode,
     );
   }
 }
+
+enum ThemeModePreference { light, dark, system }
 
 @Riverpod(keepAlive: true)
 class UserPrefs extends _$UserPrefs {
@@ -36,7 +42,17 @@ class UserPrefs extends _$UserPrefs {
     final name = rawName is String ? rawName.trim() : '';
     final rawGoal = _settings.get('dailyGoal');
     final goal = rawGoal is int ? rawGoal : 10;
-    return UserPrefsState(displayName: name, dailyGoal: goal);
+    final rawThemeMode = _settings.get('themeMode');
+    final themeMode = switch (rawThemeMode) {
+      'light' => ThemeModePreference.light,
+      'dark' => ThemeModePreference.dark,
+      _ => ThemeModePreference.system,
+    };
+    return UserPrefsState(
+      displayName: name,
+      dailyGoal: goal,
+      themeMode: themeMode,
+    );
   }
 
   void setDisplayName(String name) {
@@ -48,6 +64,11 @@ class UserPrefs extends _$UserPrefs {
   void setDailyGoal(int goal) {
     _settings.put('dailyGoal', goal);
     state = state.copyWith(dailyGoal: goal);
+  }
+
+  void setThemeMode(ThemeModePreference mode) {
+    _settings.put('themeMode', mode.name);
+    state = state.copyWith(themeMode: mode);
   }
 
   void ensureJoinDateRecorded() {
