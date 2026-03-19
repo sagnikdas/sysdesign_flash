@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hive/hive.dart';
 
 import '../../providers/mastered_provider.dart';
 import '../../providers/bookmarks_provider.dart';
@@ -9,6 +10,7 @@ import '../../providers/streak_provider.dart';
 import '../../providers/user_prefs_provider.dart';
 import '../../providers/subscription_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/notification_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -17,6 +19,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final userPrefs = ref.watch(userPrefsProvider);
+    final tier = ref.watch(subscriptionProvider);
     final authState = ref.watch(authControllerProvider);
     final displayLabel = userPrefs.displayName.trim().isEmpty
         ? 'Not set'
@@ -88,9 +91,48 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.notifications_none_outlined),
             title: const Text('Notification settings'),
-            subtitle: const Text('Pro reminder controls (coming soon)'),
-            onTap: () {},
+            subtitle: Text(
+              tier == SubscriptionTier.pro
+                  ? _notificationSummary(userPrefs)
+                  : 'Upgrade to Pro to enable reminders',
+            ),
           ),
+          if (tier == SubscriptionTier.pro) ...[
+            SwitchListTile(
+              secondary: const Icon(Icons.alarm_outlined),
+              title: const Text('Daily reminders'),
+              subtitle: const Text('Schedule a study nudge on selected days'),
+              value: userPrefs.remindersEnabled,
+              onChanged: (value) =>
+                  _toggleReminders(context, ref, enabled: value),
+            ),
+            ListTile(
+              leading: const Icon(Icons.schedule_outlined),
+              title: const Text('Reminder time'),
+              subtitle: Text(_timeLabel(userPrefs)),
+              enabled: userPrefs.remindersEnabled,
+              onTap: userPrefs.remindersEnabled
+                  ? () => _pickReminderTime(context, ref)
+                  : null,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (var day = 1; day <= 7; day++)
+                    FilterChip(
+                      label: Text(_weekdayLabel(day)),
+                      selected: userPrefs.reminderWeekdays.contains(day),
+                      onSelected: userPrefs.remindersEnabled
+                          ? (_) => _toggleWeekday(context, ref, day)
+                          : null,
+                    ),
+                ],
+              ),
+            ),
+          ],
           if (kDebugMode)
             SwitchListTile(
               secondary: const Icon(Icons.workspace_premium_outlined),
@@ -170,6 +212,109 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _timeLabel(UserPrefsState prefs) {
+    final hour = prefs.reminderHour.toString().padLeft(2, '0');
+    final minute = prefs.reminderMinute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  String _notificationSummary(UserPrefsState prefs) {
+    if (!prefs.remindersEnabled) return 'Disabled';
+    return '${_timeLabel(prefs)} on ${prefs.reminderWeekdays.length} day(s)';
+  }
+
+  String _weekdayLabel(int weekday) {
+    return switch (weekday) {
+      DateTime.monday => 'Mon',
+      DateTime.tuesday => 'Tue',
+      DateTime.wednesday => 'Wed',
+      DateTime.thursday => 'Thu',
+      DateTime.friday => 'Fri',
+      DateTime.saturday => 'Sat',
+      _ => 'Sun',
+    };
+  }
+
+  Future<void> _toggleReminders(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool enabled,
+  }) async {
+    final prefsNotifier = ref.read(userPrefsProvider.notifier);
+    prefsNotifier.setRemindersEnabled(enabled);
+
+    if (!enabled) {
+      await NotificationService.instance.cancelDailyReminders();
+      await NotificationService.instance.cancelTrialExpiryReminder();
+      return;
+    }
+
+    await NotificationService.instance.requestPermissions();
+    await _syncNotificationSchedules(ref);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Daily reminders enabled')));
+  }
+
+  Future<void> _pickReminderTime(BuildContext context, WidgetRef ref) async {
+    final prefs = ref.read(userPrefsProvider);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(
+        hour: prefs.reminderHour,
+        minute: prefs.reminderMinute,
+      ),
+    );
+    if (picked == null) return;
+    ref
+        .read(userPrefsProvider.notifier)
+        .setReminderTime(hour: picked.hour, minute: picked.minute);
+    await _syncNotificationSchedules(ref);
+  }
+
+  Future<void> _toggleWeekday(
+    BuildContext context,
+    WidgetRef ref,
+    int day,
+  ) async {
+    ref.read(userPrefsProvider.notifier).toggleReminderWeekday(day);
+    await _syncNotificationSchedules(ref);
+    if (!context.mounted) return;
+    final count = ref.read(userPrefsProvider).reminderWeekdays.length;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Reminders set for $count day(s)')));
+  }
+
+  Future<void> _syncNotificationSchedules(WidgetRef ref) async {
+    final tier = ref.read(subscriptionProvider);
+    final prefs = ref.read(userPrefsProvider);
+    if (tier != SubscriptionTier.pro || !prefs.remindersEnabled) {
+      await NotificationService.instance.cancelDailyReminders();
+      await NotificationService.instance.cancelTrialExpiryReminder();
+      return;
+    }
+
+    await NotificationService.instance.scheduleWeeklyReminders(
+      hour: prefs.reminderHour,
+      minute: prefs.reminderMinute,
+      weekdays: prefs.reminderWeekdays,
+      title: 'Time for a quick review',
+      body: 'Keep your system design skills sharp with today\'s cards.',
+    );
+
+    final subscriptionBox = Hive.box('subscription');
+    final trialStartedAt = DateTime.tryParse(
+      (subscriptionBox.get('trialStartedAt') as String?) ?? '',
+    );
+    if (trialStartedAt != null) {
+      await NotificationService.instance.scheduleTrialExpiryReminder(
+        trialStart: trialStartedAt,
+      );
+    }
   }
 
   void _confirmReset(BuildContext context, WidgetRef ref) {

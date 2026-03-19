@@ -184,6 +184,14 @@ class SubscriptionRepository {
         DateTime(2100, 1, 1).toIso8601String(),
       );
     }
+    if (plan == SubscriptionPlan.lifetime.name) {
+      await _subscriptionBox.delete('trialStartedAt');
+    } else if (_subscriptionBox.get('trialStartedAt') == null) {
+      await _subscriptionBox.put(
+        'trialStartedAt',
+        DateTime.now().toIso8601String(),
+      );
+    }
     await _subscriptionBox.put('updatedAt', DateTime.now().toIso8601String());
   }
 
@@ -198,12 +206,19 @@ class SubscriptionRepository {
         'expiresAt',
         DateTime(2100, 1, 1).toIso8601String(),
       );
+      await _subscriptionBox.delete('trialStartedAt');
     } else {
       final days = plan == SubscriptionPlan.annual ? 365 : 30;
       await _subscriptionBox.put(
         'expiresAt',
         DateTime.now().add(Duration(days: days)).toIso8601String(),
       );
+      if (_subscriptionBox.get('trialStartedAt') == null) {
+        await _subscriptionBox.put(
+          'trialStartedAt',
+          DateTime.now().toIso8601String(),
+        );
+      }
     }
     if (token != null && token.isNotEmpty) {
       await _subscriptionBox.put('purchaseToken', token);
