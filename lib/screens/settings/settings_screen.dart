@@ -136,45 +136,74 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             subtitle: Text('${userPrefs.dailyGoal} cards / day'),
             onTap: () => _pickDailyGoal(context, ref, userPrefs.dailyGoal),
           ),
-          ListTile(
-            leading: const Icon(Icons.notifications_none_outlined),
-            title: const Text('Notification settings'),
-            subtitle: Text(_notificationSummary(userPrefs)),
-          ),
           SwitchListTile(
             secondary: const Icon(Icons.alarm_outlined),
             title: const Text('Daily reminders'),
-            subtitle: const Text('Schedule a study nudge on selected days'),
+            subtitle: Text(_notificationSummary(userPrefs)),
             value: userPrefs.remindersEnabled,
             onChanged: (value) =>
                 _toggleReminders(context, ref, enabled: value),
           ),
-          ListTile(
-            leading: const Icon(Icons.schedule_outlined),
-            title: const Text('Reminder time'),
-            subtitle: Text(_timeLabel(userPrefs)),
-            enabled: userPrefs.remindersEnabled,
-            onTap: userPrefs.remindersEnabled
-                ? () => _pickReminderTime(context, ref)
-                : null,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (var day = 1; day <= 7; day++)
-                  FilterChip(
-                    label: Text(_weekdayLabel(day)),
-                    selected: userPrefs.reminderWeekdays.contains(day),
-                    onSelected: userPrefs.remindersEnabled
-                        ? (_) => _toggleWeekday(context, ref, day)
-                        : null,
-                  ),
-              ],
+          if (userPrefs.remindersEnabled) ...[
+            ListTile(
+              leading: const Icon(Icons.schedule_outlined),
+              title: const Text('Reminder time'),
+              subtitle: Text(_timeLabel(userPrefs)),
+              trailing: const Icon(Icons.edit_outlined),
+              onTap: () => _pickReminderTime(context, ref),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+              child: Text(
+                'Days',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (var day = 1; day <= 7; day++)
+                    FilterChip(
+                      label: Text(_weekdayLabel(day)),
+                      selected: userPrefs.reminderWeekdays.contains(day),
+                      onSelected: (_) => _toggleWeekday(context, ref, day),
+                    ),
+                ],
+              ),
+            ),
+            _NextReminderTile(prefs: userPrefs),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.notifications_active_outlined, size: 18),
+                label: const Text('Send test notification'),
+                onPressed: () => _sendTestNotification(context),
+              ),
+            ),
+          ],
+          if (!userPrefs.remindersEnabled)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (var day = 1; day <= 7; day++)
+                    FilterChip(
+                      label: Text(_weekdayLabel(day)),
+                      selected: userPrefs.reminderWeekdays.contains(day),
+                      onSelected: null,
+                    ),
+                ],
+              ),
+            ),
           const Divider(),
           ListTile(
             leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
@@ -231,8 +260,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   String _notificationSummary(UserPrefsState prefs) {
-    if (!prefs.remindersEnabled) return 'Disabled';
-    return '${_timeLabel(prefs)} on ${prefs.reminderWeekdays.length} day(s)';
+    if (!prefs.remindersEnabled) return 'Tap to enable';
+    if (prefs.reminderWeekdays.isEmpty) return 'No days selected';
+    return '${_timeLabel(prefs)} · ${prefs.reminderWeekdays.length} day(s)';
+  }
+
+  Future<void> _sendTestNotification(BuildContext context) async {
+    try {
+      await NotificationService.instance.showTestNotification();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Test notification sent')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send test notification: $e')),
+      );
+    }
   }
 
   String _weekdayLabel(int weekday) {
@@ -284,6 +329,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   Future<void> _pickReminderTime(BuildContext context, WidgetRef ref) async {
     final prefs = ref.read(userPrefsProvider);
+    final messenger = ScaffoldMessenger.of(context);
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(
@@ -295,7 +341,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     ref
         .read(userPrefsProvider.notifier)
         .setReminderTime(hour: picked.hour, minute: picked.minute);
-    await _syncNotificationSchedules(ref);
+    try {
+      await _syncNotificationSchedules(ref);
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Could not schedule reminders: $e')));
+      return;
+    }
+    final hh = picked.hour.toString().padLeft(2, '0');
+    final mm = picked.minute.toString().padLeft(2, '0');
+    messenger.showSnackBar(SnackBar(content: Text('Reminder time set to $hh:$mm')));
   }
 
   Future<void> _toggleWeekday(
@@ -303,13 +357,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     WidgetRef ref,
     int day,
   ) async {
+    final messenger = ScaffoldMessenger.of(context);
     ref.read(userPrefsProvider.notifier).toggleReminderWeekday(day);
-    await _syncNotificationSchedules(ref);
-    if (!context.mounted) return;
+    try {
+      await _syncNotificationSchedules(ref);
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Could not schedule reminders: $e')));
+      return;
+    }
     final count = ref.read(userPrefsProvider).reminderWeekdays.length;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Reminders set for $count day(s)')));
+    messenger.showSnackBar(
+      SnackBar(content: Text(count == 0 ? 'No days selected' : 'Reminders set for $count day(s)')),
+    );
   }
 
   Future<void> _syncNotificationSchedules(WidgetRef ref) async {
@@ -318,7 +377,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       await NotificationService.instance.cancelDailyReminders();
       return;
     }
-
     await NotificationService.instance.scheduleWeeklyReminders(
       hour: prefs.reminderHour,
       minute: prefs.reminderMinute,
@@ -434,5 +492,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         ],
       ),
     );
+  }
+}
+
+class _NextReminderTile extends StatelessWidget {
+  const _NextReminderTile({required this.prefs});
+
+  final UserPrefsState prefs;
+
+  @override
+  Widget build(BuildContext context) {
+    final next = NotificationService.instance.nextReminderTime(
+      prefs.reminderHour,
+      prefs.reminderMinute,
+      prefs.reminderWeekdays,
+    );
+
+    final String subtitle;
+    if (prefs.reminderWeekdays.isEmpty) {
+      subtitle = 'Select at least one day above';
+    } else if (next == null) {
+      subtitle = 'No upcoming reminder';
+    } else {
+      final now = DateTime.now();
+      final isToday = next.year == now.year &&
+          next.month == now.month &&
+          next.day == now.day;
+      final isTomorrow = next.year == now.year &&
+          next.month == now.month &&
+          next.day == now.day + 1;
+      final dayLabel = isToday
+          ? 'Today'
+          : isTomorrow
+              ? 'Tomorrow'
+              : _weekdayName(next.weekday);
+      final hh = next.hour.toString().padLeft(2, '0');
+      final mm = next.minute.toString().padLeft(2, '0');
+      subtitle = '$dayLabel at $hh:$mm';
+    }
+
+    return ListTile(
+      leading: const Icon(Icons.event_outlined),
+      title: const Text('Next reminder'),
+      subtitle: Text(subtitle),
+      dense: true,
+    );
+  }
+
+  String _weekdayName(int weekday) {
+    return switch (weekday) {
+      DateTime.monday => 'Monday',
+      DateTime.tuesday => 'Tuesday',
+      DateTime.wednesday => 'Wednesday',
+      DateTime.thursday => 'Thursday',
+      DateTime.friday => 'Friday',
+      DateTime.saturday => 'Saturday',
+      _ => 'Sunday',
+    };
   }
 }
