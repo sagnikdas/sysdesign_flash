@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Planning & review docs (local only)
+review.md
+IMPLEMENTATION_PLAN.md
+SYSDESIGN_FLASH_COMPLETE_PLAN.md
