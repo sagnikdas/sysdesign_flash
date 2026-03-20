@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sysdesign_flash/core/utils/readiness_score.dart';
+import 'package:sysd/core/utils/readiness_score.dart';
 
 void main() {
   test('0 mastered, 0 avgQuality, 0 coverage => 0', () {

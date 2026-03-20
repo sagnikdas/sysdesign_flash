@@ -16,89 +16,164 @@ class ConceptGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final heroTag = 'concept_header_${concept.id}';
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = isDark ? cs.surfaceContainer : cs.surface;
 
     return GestureDetector(
       onTap: onTap,
       child: Card(
         clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        elevation: 0,
+        color: cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isMastered
+                ? const Color(0xFF22C55E).withValues(alpha: 0.4)
+                : cs.outlineVariant.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        child: Stack(
           children: [
-            Container(height: 4, color: concept.color),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Hero(
-                          tag: heroTag,
-                          child: Material(
-                            color: Colors.transparent,
-                            child: Text(
-                              concept.icon,
-                              style: const TextStyle(fontSize: 24),
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        if (isMastered)
-                          Container(
-                            width: 22,
-                            height: 22,
-                            decoration: const BoxDecoration(
-                              color: Colors.green,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check,
-                              color: Colors.white,
-                              size: 14,
-                            ),
-                          )
-                        else
-                          _DifficultyDot(difficulty: concept.difficulty),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Colored header band with emoji
+                Container(
+                  width: double.infinity,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        concept.color.withValues(alpha: isDark ? 0.25 : 0.18),
+                        concept.color.withValues(alpha: isDark ? 0.10 : 0.07),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: Text(
-                        concept.title,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          height: 1.2,
+                  ),
+                  child: Center(
+                    child: Hero(
+                      tag: heroTag,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Text(
+                          concept.icon,
+                          style: const TextStyle(fontSize: 34),
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
+                  ),
+                ),
+                // Content
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(11, 9, 11, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          concept.title,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            height: 1.25,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Expanded(
+                          child: Text(
+                            concept.tagline,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                              height: 1.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(height: 7),
+                        Row(
+                          children: [
+                            // Category pill
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: concept.color.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  concept.category,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: concept.color,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 10,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            _DifficultyBadge(difficulty: concept.difficulty),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // Mastered overlay badge
+            if (isMastered)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF22C55E),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF22C55E).withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
-                      decoration: BoxDecoration(
-                        color: concept.color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 10,
                       ),
-                      child: Text(
-                        concept.category,
+                      const SizedBox(width: 3),
+                      Text(
+                        'Done',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: concept.color,
-                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -106,36 +181,53 @@ class ConceptGridCard extends StatelessWidget {
   }
 }
 
-class _DifficultyDot extends StatelessWidget {
+class _DifficultyBadge extends StatelessWidget {
   final Difficulty difficulty;
 
-  const _DifficultyDot({required this.difficulty});
+  const _DifficultyBadge({required this.difficulty});
 
   @override
   Widget build(BuildContext context) {
-    final (color, label) = switch (difficulty) {
-      Difficulty.beginner => (Colors.green, 'B'),
-      Difficulty.intermediate => (Colors.orange, 'I'),
-      Difficulty.advanced => (Colors.red, 'A'),
+    final (color, label, icon) = switch (difficulty) {
+      Difficulty.beginner => (
+        const Color(0xFF22C55E),
+        'Easy',
+        Icons.eco_outlined,
+      ),
+      Difficulty.intermediate => (
+        const Color(0xFFF97316),
+        'Mid',
+        Icons.trending_up_rounded,
+      ),
+      Difficulty.advanced => (
+        const Color(0xFFEF4444),
+        'Hard',
+        Icons.bolt_rounded,
+      ),
     };
 
     return Tooltip(
       message: difficulty.name,
       child: Container(
-        width: 20,
-        height: 20,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15),
-          shape: BoxShape.circle,
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(6),
         ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 9, color: color),
+            const SizedBox(width: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
         ),
       ),
     );

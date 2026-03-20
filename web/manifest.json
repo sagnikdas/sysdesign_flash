@@ -1,6 +1,6 @@
 {
-    "name": "sysdesign_flash",
-    "short_name": "sysdesign_flash",
+    "name": "sysd",
+    "short_name": "sysd",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../providers/user_prefs_provider.dart';
+import '../../shared/widgets/app_logo.dart';
 import 'widgets/goal_picker.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -128,11 +129,7 @@ class _WelcomePage extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 24),
-          Icon(
-            Icons.architecture,
-            size: 80,
-            color: theme.colorScheme.primary,
-          ),
+          AppLogo(size: 80),
           const SizedBox(height: 24),
           Text(
             'SysDesign Flash',

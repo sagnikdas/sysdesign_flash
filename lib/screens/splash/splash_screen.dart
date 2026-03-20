@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../shared/widgets/app_logo.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -78,11 +80,7 @@ class _SplashScreenState extends State<SplashScreen>
               children: [
                 Hero(
                   tag: 'app_logo',
-                  child: Icon(
-                    Icons.architecture,
-                    size: 80,
-                    color: theme.colorScheme.primary,
-                  ),
+                  child: AppLogo(size: 80),
                 ),
                 const SizedBox(height: 16),
                 Text(

@@ -66,6 +66,19 @@ class ConceptsScreen extends ConsumerWidget {
             sliver: const SliverToBoxAdapter(child: HomeSearchField()),
           ),
         SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+            child: Text(
+              'Category',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(
           child: CategoryFilterBar(
             categories: categories,
             selected: selectedCategory,
@@ -73,7 +86,19 @@ class ConceptsScreen extends ConsumerWidget {
                 ref.read(deckFilterProvider.notifier).select(cat),
           ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: 8)),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+            child: Text(
+              'Difficulty',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+        ),
         SliverToBoxAdapter(
           child: DifficultyFilterBar(
             selected: selectedDifficulty,
@@ -81,7 +106,7 @@ class ConceptsScreen extends ConsumerWidget {
                 ref.read(difficultyDeckFilterProvider.notifier).select(d),
           ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: 12)),
+        const SliverToBoxAdapter(child: SizedBox(height: 14)),
         if (concepts.isEmpty)
           const SliverFillRemaining(
             hasScrollBody: false,
@@ -100,7 +125,7 @@ class ConceptsScreen extends ConsumerWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
-                childAspectRatio: 0.9,
+                childAspectRatio: 0.78,
               ),
               delegate: SliverChildBuilderDelegate((context, index) {
                 final concept = concepts[index];

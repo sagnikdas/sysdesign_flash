@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:sysdesign_flash/app.dart';
+import 'package:sysd/app.dart';
 
 void main() {
   testWidgets('App launches and shows splash screen', (tester) async {

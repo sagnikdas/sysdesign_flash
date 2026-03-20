@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:sysdesign_flash/domain/models/review_schedule.dart';
-import 'package:sysdesign_flash/core/utils/sm2_algorithm.dart';
+import 'package:sysd/domain/models/review_schedule.dart';
+import 'package:sysd/core/utils/sm2_algorithm.dart';
 
 void main() {
   test('quality=5 produces increasing intervals', () {

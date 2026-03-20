@@ -1,4 +1,4 @@
-package com.sagnikdas.sysd.app.sysdesign_flash
+package com.sagnikdas.sysd.app
 
 import io.flutter.embedding.android.FlutterActivity
 

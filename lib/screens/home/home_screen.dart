@@ -8,6 +8,7 @@ import '../../providers/streak_provider.dart';
 import '../../providers/weak_areas_provider.dart';
 import '../../providers/user_prefs_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../shared/widgets/app_logo.dart';
 import 'widgets/welcome_banner.dart';
 import 'widgets/interview_simulation_banner.dart';
 import 'widgets/streak_reset_warning_sheet.dart';
@@ -90,10 +91,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Hero(
                 tag: 'app_logo',
-                child: Icon(
-                  Icons.architecture,
-                  color: theme.colorScheme.primary,
-                ),
+                child: AppLogo(size: 28),
               ),
               const SizedBox(width: 8),
               const Text('SysDesign Flash'),
