@@ -35,6 +35,6 @@ class WeakAreas extends _$WeakAreas {
     }
 
     scored.sort((a, b) => b.weaknessRatio.compareTo(a.weaknessRatio));
-    return scored.take(2).toList();
+    return scored.where((w) => w.weaknessRatio > 0).take(2).toList();
   }
 }

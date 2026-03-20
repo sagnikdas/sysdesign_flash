@@ -10,9 +10,7 @@ import '../../providers/bookmarks_provider.dart';
 import '../../providers/streak_provider.dart';
 import '../../providers/study_dates_provider.dart';
 import '../../providers/spaced_repetition_provider.dart';
-import '../../providers/study_session_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../shared/widgets/empty_state.dart';
 import 'widgets/swipeable_card.dart';
 import 'widgets/card_stack_effect.dart';
 import 'widgets/session_complete_sheet.dart';
@@ -44,31 +42,17 @@ class _CardScreenState extends ConsumerState<CardScreen>
   @override
   void initState() {
     super.initState();
+    _startedAt = DateTime.now();
     if (widget.conceptIds != null) {
-      _startedAt = DateTime.now();
       final conceptById = {for (final c in allConcepts) c.id: c};
       _cards = widget.conceptIds!
           .map((id) => conceptById[id])
           .whereType<Concept>()
           .toList(growable: false);
-    } else if (widget.deckId == 'smart') {
-      // Smart sessions are built by SM-2 queue prioritization.
-      final session = ref.read(studySessionProvider(maxNew: 5));
-      _startedAt = session.startedAt;
-
-      final conceptById = {for (final c in allConcepts) c.id: c};
-      _cards = session.cardOrder
-          .map((id) => conceptById[id])
-          .whereType<Concept>()
-          .toList();
+    } else if (widget.deckId == 'all') {
+      _cards = List.of(allConcepts);
     } else {
-      _startedAt = DateTime.now();
-
-      if (widget.deckId == 'all') {
-        _cards = List.of(allConcepts);
-      } else {
-        _cards = allConcepts.where((c) => c.category == widget.deckId).toList();
-      }
+      _cards = allConcepts.where((c) => c.category == widget.deckId).toList();
     }
 
     _enterController = AnimationController(
@@ -199,7 +183,6 @@ class _CardScreenState extends ConsumerState<CardScreen>
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final isComplete = _currentIndex >= _cards.length;
     final bookmarks = ref.watch(bookmarksProvider);
-    final isSmartDeck = widget.deckId == 'smart' && widget.conceptIds == null;
 
     return PopScope(
       canPop: !isComplete,
@@ -236,13 +219,6 @@ class _CardScreenState extends ConsumerState<CardScreen>
       ),
       body: isComplete
           ? const SizedBox.shrink()
-          : _cards.isEmpty && isSmartDeck
-          ? const EmptyState(
-              icon: Icons.check_circle_outline,
-              title: 'All caught up!',
-              subtitle:
-                  'No cards are due today. Come back later for your next review.',
-            )
           : Column(
               children: [
                 LinearProgressIndicator(

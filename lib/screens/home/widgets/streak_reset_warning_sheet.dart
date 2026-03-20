@@ -54,7 +54,7 @@ class StreakResetWarningSheet extends StatelessWidget {
             width: double.infinity,
             child: FilledButton(
               onPressed: onStart,
-              child: const Text('Start smart session'),
+              child: const Text('Start studying'),
             ),
           ),
         ],

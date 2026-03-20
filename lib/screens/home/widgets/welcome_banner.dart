@@ -43,51 +43,47 @@ class WelcomeBanner extends StatelessWidget {
     final progress = totalCount > 0 ? masteredCount / totalCount : 0.0;
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _greeting,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _motivationalLine(progress),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Daily goal: $dailyGoal cards',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: progress),
-              duration: const Duration(milliseconds: 800),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, _) => LinearProgressIndicator(
-                value: value,
-                borderRadius: BorderRadius.circular(4),
-                minHeight: 8,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '$masteredCount / $totalCount mastered',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.fromLTRB(20, 4, 16, 4),
+        childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        title: Text(
+          _greeting,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
+        subtitle: Text(
+          '$masteredCount / $totalCount mastered',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        children: [
+          Text(
+            _motivationalLine(progress),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Daily goal: $dailyGoal cards',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: progress),
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, _) => LinearProgressIndicator(
+              value: value,
+              borderRadius: BorderRadius.circular(4),
+              minHeight: 8,
+            ),
+          ),
+        ],
       ),
     );
   }

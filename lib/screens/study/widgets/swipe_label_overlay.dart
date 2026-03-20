@@ -11,13 +11,12 @@ class SwipeLabelOverlay extends StatelessWidget {
     final reviewOpacity = (-dragFraction).clamp(0.0, 1.0);
 
     return IgnorePointer(
-      child: Stack(
-        children: [
-          // GOT IT! — right swipe
-          Positioned(
-            top: 40,
-            left: 24,
-            child: Opacity(
+      child: Center(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // GOT IT! — right swipe
+            Opacity(
               opacity: gotItOpacity,
               child: Transform.rotate(
                 angle: -0.3,
@@ -40,12 +39,8 @@ class SwipeLabelOverlay extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-          // REVIEW — left swipe
-          Positioned(
-            top: 40,
-            right: 24,
-            child: Opacity(
+            // REVIEW — left swipe
+            Opacity(
               opacity: reviewOpacity,
               child: Transform.rotate(
                 angle: 0.3,
@@ -68,8 +63,8 @@ class SwipeLabelOverlay extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

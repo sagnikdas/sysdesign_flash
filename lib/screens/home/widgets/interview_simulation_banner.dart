@@ -10,43 +10,36 @@ class InterviewSimulationBanner extends StatelessWidget {
 
     return Card(
       color: theme.colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.quiz_outlined,
-                    size: 22, color: theme.colorScheme.primary),
-                const SizedBox(width: 10),
-                Text(
-                  'Interview Simulation',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        leading: Icon(Icons.quiz_outlined, size: 22, color: theme.colorScheme.primary),
+        title: Text(
+          'Interview Simulation',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
               'Timed scenarios with hint cards and missed-concept review.',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => context.push('/simulation'),
-                child: const Text('Start Interview'),
-              ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => context.push('/simulation'),
+              child: const Text('Start Interview'),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
-

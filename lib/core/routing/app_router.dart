@@ -9,6 +9,7 @@ import '../../screens/progress/progress_screen.dart';
 import '../../screens/settings/settings_screen.dart';
 import '../../screens/study/card_screen.dart';
 import '../../screens/auth/auth_screen.dart';
+import '../../screens/concepts/concepts_screen.dart';
 import '../../screens/simulation/simulation_results_screen.dart';
 import '../../screens/simulation/simulation_session_screen.dart';
 import '../../screens/simulation/simulation_setup_screen.dart';
@@ -79,6 +80,14 @@ final appRouter = GoRouter(
             state: state,
             type: SharedAxisTransitionType.horizontal,
             child: const HomeScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/concepts',
+          pageBuilder: (context, state) => _sharedAxisPage(
+            state: state,
+            type: SharedAxisTransitionType.horizontal,
+            child: const ConceptsScreen(),
           ),
         ),
         GoRoute(
